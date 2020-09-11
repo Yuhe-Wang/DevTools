@@ -1,7 +1,12 @@
 import os
 import sys
 import socket
+import subprocess
 import atexit
+import types
+import traceback
+import shlex
+import winreg
 from ctypes import windll
 from pathlib import Path
 
@@ -286,6 +291,72 @@ def moveFile(src, dst):
         # Make sure the parent directory exists
         dst.parent.mkdir(parents=True)
     shutil.move(str(src), str(dst))
+
+
+def isUserAdmin():
+    if os.name == 'nt':
+        try:
+            # WARNING: requires Windows XP SP2 or higher!
+            return windll.shell32.IsUserAnAdmin()
+        except:
+            traceback.print_exc()
+            print("Admin check failed, assuming not an admin.")
+            return False
+    else:
+        # Check for root on Posix
+        return os.getuid() == 0
+
+
+def runAsAdmin(cmd, wait=True):
+    if os.name != 'nt':
+        return 1
+    
+    import win32api, win32con, win32event, win32process
+    from win32com.shell.shell import ShellExecuteEx
+    from win32com.shell import shellcon
+
+    if isinstance(cmd, str):
+        splits = cmd.split()
+        exeFile = splits[0]
+        params = ' '.join(splits[1:])
+    else:
+        exeFile = cmd[0]
+        params = cmdToStr(cmd[1:])
+
+    procInfo = ShellExecuteEx(nShow=win32con.SW_HIDE,
+                              fMask=shellcon.SEE_MASK_NOCLOSEPROCESS,
+                              lpVerb="runas",
+                              lpFile=exeFile,
+                              lpParameters=params)
+
+    if wait:
+        procHandle = procInfo['hProcess']    
+        obj = win32event.WaitForSingleObject(procHandle, win32event.INFINITE)
+        rc = win32process.GetExitCodeProcess(procHandle)
+    else:
+        rc = 0
+
+    return rc
+
+
+def regAdd(key, data=None, valueName='', valueType=winreg.REG_SZ, view=winreg.KEY_WOW64_64KEY):
+    HKeyDict = {
+        "HKCR": winreg.HKEY_CLASSES_ROOT,
+        "HKCU": winreg.HKEY_CURRENT_USER,
+        "HKLM": winreg.HKEY_LOCAL_MACHINE,
+        "HKU": winreg.HKEY_USERS,
+        "HKCC": winreg.HKEY_CURRENT_CONFIG
+    }
+    idx = key.find("\\")
+    if idx != -1:
+        HKey = HKeyDict[key[0:idx]]
+        subKey = key[idx + 1:]
+    else:
+        HKey = HKeyDict[key]
+        subKey = ''
+    keyHandle = winreg.CreateKeyEx(HKey, subKey, 0, access=winreg.KEY_ALL_ACCESS|view)
+    if data:
+        winreg.SetValueEx(keyHandle, valueName, 0, valueType, data)
 
 
 # Must create a setting instance
