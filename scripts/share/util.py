@@ -86,6 +86,44 @@ def cmdToStr(cmd):
         return cmd
 
 
+def call(cmd, ENV=None, INPUT=None, DIR=None, PRINT=False, DETACH=False):
+    if PRINT:
+        cmdStr = cmdToStr(cmd)
+        if cmdStr.startswith("cmd /c"):
+            cmdStr = cmdStr[len("cmd /c") + 1:]
+        printf(cmdStr)
+    # This function will return stdout, stderr and exit code. No exception throw
+    _env = os.environ.copy()
+    if ENV:
+        for key in ENV:
+            _env[key] = ENV[key]  # Add or override the parent environment variables
+    if INPUT:
+        INPUT = INPUT.encode("utf-8")  # The input should be a string
+        STDIN = subprocess.PIPE
+    else:
+        STDIN = None
+    try:
+        # May fail to create the subprocess
+        proc = subprocess.Popen(cmd, stdin=STDIN, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, env=_env, cwd=DIR)
+        if DETACH:
+            return "Detached process", '', 0
+        try:
+            stdout, stderr = proc.communicate(input=INPUT)
+            stdout, stderr = stdout.decode("utf-8").rstrip(), stderr.decode("utf-8").rstrip()
+        except Exception as e:
+            proc.kill()
+            proc.communicate()
+            stdout = "The subprocess failed to finish normally!"
+            stderr = str(e)
+        exitCode = proc.returncode
+    except Exception as e:
+        stdout = "Failed to create subprocess"
+        stderr = str(e)
+        exitCode = 1
+    return stdout, stderr, exitCode
+
+
 def calls(cmd, ENV=None, DIR=None, TIMEOUT=None, PRINT=False):
     cmdStr = cmdToStr(cmd)
     if PRINT:
@@ -339,7 +377,7 @@ def runAsAdmin(cmd, wait=True):
     return rc
 
 
-def regAdd(key, data=None, valueName='', valueType=winreg.REG_SZ, view=winreg.KEY_WOW64_64KEY):
+def splitRegKey(key):
     HKeyDict = {
         "HKCR": winreg.HKEY_CLASSES_ROOT,
         "HKCU": winreg.HKEY_CURRENT_USER,
@@ -354,9 +392,23 @@ def regAdd(key, data=None, valueName='', valueType=winreg.REG_SZ, view=winreg.KE
     else:
         HKey = HKeyDict[key]
         subKey = ''
+    return HKey, subKey
+
+
+def regAdd(key, value=None, valueName='', valueType=winreg.REG_SZ, view=winreg.KEY_WOW64_64KEY):
+    HKey, subKey = splitRegKey(key)
     keyHandle = winreg.CreateKeyEx(HKey, subKey, 0, access=winreg.KEY_ALL_ACCESS|view)
-    if data:
-        winreg.SetValueEx(keyHandle, valueName, 0, valueType, data)
+    if value:
+        winreg.SetValueEx(keyHandle, valueName, 0, valueType, value)
+
+
+def regQuery(key, valueName='', view=winreg.KEY_WOW64_64KEY):
+    '''
+    return value, valueType
+    '''
+    HKey, subKey = splitRegKey(key)
+    keyHandle = winreg.OpenKeyEx(HKey, subKey, 0, access=winreg.KEY_READ|view)
+    return winreg.QueryValueEx(keyHandle, valueName)
 
 
 # Must create a setting instance

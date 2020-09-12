@@ -1,19 +1,48 @@
 
 import winreg
+import os
 from pathlib import Path
 
 from scripts.share.util import gs
-from scripts.share.util import runAsAdmin
+from scripts.share.util import regQuery
 from scripts.share.util import regAdd
+from scripts.share.util import call
 from scripts.share.util import calls
 from scripts.share.util import printf
+
+
+def setupPython():
+    folder = "python-3.8.5"
+    printf("Setup %s..." % folder)
+    pathList = [str(gs.GitDir/"app"/folder)]
+    # Scan the userPath
+    for p in regQuery(r"HKCU\Environment", "Path")[0].split(';'):
+        pStrip = p.strip()
+        if pStrip:
+            pathList.append(pStrip)
+            testPath = Path(pStrip)/"python.exe"
+            if testPath.is_file():
+                ret = call([str(testPath), "--version"])
+                if ret[2] == 0 and ret[0].split()[1].startswith("3."):
+                    return
+    # Scan the local machine path
+    for p in regQuery(r"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment", "Path")[0].split(';'):
+        pStrip = p.strip()
+        if pStrip:
+            testPath = Path(pStrip)/"python.exe"
+            if testPath.is_file():
+                ret = call([str(testPath), "--version"])
+                if ret[2] == 0 and ret[0].split()[1].startswith("3."):
+                    return
+    # Cannot find python 3. Add python 3 in this repo to user path
+    regAdd(r"HKCU\Environment", ";".join(pathList), "Path")
 
 
 def setup7z():
     # Setup file extension with 7z
     folder = "7z-19.00"
-    clsid = "23170F69-40C1-278A-1000-000100020000"  # The clsid may be changed with the version
     printf("Setup %s..." % folder)
+    clsid = "23170F69-40C1-278A-1000-000100020000"  # The clsid may be changed with the version
     iconDict = {
         "001": 9,
         "7z": 0,
@@ -107,10 +136,12 @@ def main(argv):
         printf("Please specifiy the setup target or use all instead")
         return 1
     if argv[0] == "all":
-        argv[0] = "7z"
+        argv[0] = "7z,python"
     setupList = argv[0].split(',')
     printf("Running setup...")
 
+    if "python" in setupList:
+        setupPython()
     if "7z" in setupList:
         setup7z()
     printf("Setup done!")
