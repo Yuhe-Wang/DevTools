@@ -58,14 +58,22 @@ def runAsAdmin(cmd, wait=True, show=False):
     return rc
 
 
+HKeyDict = {
+    "HKCR": winreg.HKEY_CLASSES_ROOT,
+    "HKCU": winreg.HKEY_CURRENT_USER,
+    "HKLM": winreg.HKEY_LOCAL_MACHINE,
+    "HKU": winreg.HKEY_USERS,
+    "HKCC": winreg.HKEY_CURRENT_CONFIG,
+
+    "HKEY_CLASSES_ROOT": winreg.HKEY_CLASSES_ROOT,
+    "HKEY_CURRENT_USER": winreg.HKEY_CURRENT_USER,
+    "HKEY_LOCAL_MACHINE": winreg.HKEY_LOCAL_MACHINE,
+    "HKEY_USERS": winreg.HKEY_USERS,
+    "HKEY_CURRENT_CONFIG": winreg.HKEY_CURRENT_CONFIG
+}
+
+
 def splitRegKey(key):
-    HKeyDict = {
-        "HKCR": winreg.HKEY_CLASSES_ROOT,
-        "HKCU": winreg.HKEY_CURRENT_USER,
-        "HKLM": winreg.HKEY_LOCAL_MACHINE,
-        "HKU": winreg.HKEY_USERS,
-        "HKCC": winreg.HKEY_CURRENT_CONFIG
-    }
     idx = key.find("\\")
     if idx != -1:
         HKey = HKeyDict[key[0:idx]]
@@ -76,12 +84,19 @@ def splitRegKey(key):
     return HKey, subKey
 
 
-def regAdd(key, valueName='@', value=None, valueType=winreg.REG_SZ, view=winreg.KEY_WOW64_64KEY):
+def regAdd(key, valueName='@', value=None, valueType=None, view=winreg.KEY_WOW64_64KEY):
     HKey, subKey = splitRegKey(key)
     keyHandle = winreg.CreateKeyEx(HKey, subKey, 0, access=winreg.KEY_ALL_ACCESS | view)
     if value is not None:
         if valueName == '@':
             valueName = ''
+        if valueType is None:  # Deduct the value type automatically
+            if isinstance(value, str):
+                valueType = winreg.REG_SZ
+            elif isinstance(value, int):
+                valueType = winreg.REG_DWORD
+            elif isinstance(value, bytes) or isinstance(value, bytearray):
+                valueType = winreg.REG_BINARY
         winreg.SetValueEx(keyHandle, valueName, 0, valueType, value)
 
 

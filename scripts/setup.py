@@ -41,7 +41,7 @@ def setupPython():
 
 
 def setupFont():
-    for p in (gs.GitDir/"fonts").iterdir():
+    for p in (gs.GitDir/"res/fonts").iterdir():
         if p.suffix.lower() == ".ttf":
             printf("Installing font %s" % p.name)
             installFont(p)
@@ -116,14 +116,14 @@ def setupNpp():
     regAdd(r"HKCR\CLSID\{%s}\InprocServer32" % clsid, "ThreadingModel", "Apartment")
     regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Title", "Edit with &Notepad++")
     regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Path", str(appDir/"notepad++.exe"))
-    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Custom", "")
-    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "ShowIcon", 1, winreg.REG_DWORD)
-    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Dynamic",  1, winreg.REG_DWORD)
-    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Maxtext",  0x19, winreg.REG_DWORD)
+    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Custom", '')
+    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "ShowIcon", 1)
+    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Dynamic",  1)
+    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Maxtext",  25)
     regAdd(r"HKCR\*\shellex\ContextMenuHandlers\ANotepad++64", '@', "{%s}" % clsid)
     srcDir = gs.GitDir/"backup/Notepad++"
     dstDir = Path(os.environ["appdata"])/"Notepad++"
-    if srcDir.is_dir() and dstDir.is_dir():
+    if srcDir.is_dir():
         copyPath(srcDir, dstDir)
 
 
@@ -137,6 +137,108 @@ def backup():
     printf("Backup done!")
 
 
+def optimizeWin10():
+    # Never merge task bar
+    regAdd(r"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarGlomLevel", 2)
+
+    # 显示开始菜单、任务栏、操作中心和标题栏的颜色
+    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize", "ColorPrevalence", 1)
+    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\DWM", "ColorPrevalence", 1)
+    # <ExplorerNotify Type="Custom" msg="111" wParam="#A220" Explorer="True">
+
+    # 使开始菜单、任务栏、操作中心透明
+    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 1)
+    # 关闭商店应用推广
+    regAdd(r"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager",
+           "PreInstalledAppsEnabled", 0)
+    # 关闭锁屏时的Windows 聚焦推广
+    regAdd(r"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager",
+           "RotatingLockScreenEnable", 0)
+    # 关闭游戏录制工具
+    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR", "AppCaptureEnabled", 0)
+    # 关闭多嘴的小娜
+    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "AllowCortana", 0)
+    # 打开资源管理器时显示此电脑
+    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "LaunchTo", 1)
+    # 显示所有文件扩展名
+    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "HideFileExt", 0)
+    # <ExplorerNotify Type="Custom" msg="111" wParam="#A220" Explorer="True">
+
+    # 隐藏快捷方式小箭头
+    copyPath(gs.GitDir/"res/icon/blank.ico", Path(os.environ["systemroot"]))
+    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Icons",
+           "29", r"%systemroot%\Blank.ico", winreg.REG_EXPAND_SZ)
+
+    # 创建快捷方式时不添 快捷方式 文字
+    regAdd(r"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer", "Link", b"00000000")
+    # Restart="Explorer"
+
+    # 收起资源管理器功能区 ribbon
+    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Ribbon",
+           "MinimizedStateTabletModeOff", 1)
+    # <ExplorerNotify Type="Custom" msg="111" wParam="#A220" Explorer="True">
+
+    # 禁止自动播放
+    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers",
+           "DisableAutoplay", 1)
+    # <ExplorerNotify Type="Custom" msg="111" wParam="#A220" Explorer="True)
+
+    # 在桌面显示我的电脑
+    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
+           "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", 0)
+    # <ExplorerNotify Type="AssocChanged>
+    # 在桌面显示回收站
+    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
+           "{645FF040-5081-101B-9F08-00AA002F954E}", 0)
+    # <ExplorerNotify Type="AssocChanged>
+    # 在桌面显示控制面板
+    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
+           "{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}", 0)
+    # <ExplorerNotify Type="AssocChanged>
+    # 在桌面显示用户文件夹
+    # regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
+    #       "{59031a47-3f72-44a7-89c5-5595fe6b30ee}", 0)
+    # <ExplorerNotify Type="AssocChanged>
+    # 在桌面显示网络
+    # regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
+    #       "{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", 0)
+    # <ExplorerNotify Type="AssocChanged>
+
+    # 启用自动换行
+    regAdd(r"HKEY_CURRENT_USER\Software\Microsoft\Notepad", "fWrap", 1)
+    # 始终显示状态栏
+    regAdd(r"HKEY_CURRENT_USER\Software\Microsoft\Notepad", "StatusBar", 1)
+
+    # 禁用客户体验改善计划
+    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\SQMClient\Windows", "CEIPEnable", 0)
+
+    # 启用 Windows 照片查看器
+    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
+           ".jpg", "PhotoViewer.FileAssoc.Tiff")
+    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
+           ".png", "PhotoViewer.FileAssoc.Tiff")
+    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
+           ".jpeg", "PhotoViewer.FileAssoc.Tiff")
+    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
+           ".bmp", "PhotoViewer.FileAssoc.Tiff")
+    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
+           ".jpe", "PhotoViewer.FileAssoc.Tiff")
+    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
+           ".jfif", "PhotoViewer.FileAssoc.Tiff")
+    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
+           ".dib", "PhotoViewer.FileAssoc.Tiff")
+    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
+           ".ico", "PhotoViewer.FileAssoc.Tiff")
+    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
+           ".gif", "PhotoViewer.FileAssoc.Tiff")
+    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
+           ".tga", "PhotoViewer.FileAssoc.Tiff")
+
+    # <ExplorerNotify Type="Custom" msg="111" wParam="#A220" Explorer="True">
+    # <ExplorerNotify Type="AssocChanged>
+    # Restart="Explorer"
+
+
 def main(argv):
     if not argv:
         printf("Please specifiy the setup target or use all instead")
@@ -146,7 +248,7 @@ def main(argv):
         return 0
 
     if argv[0] == "all":
-        argv[0] = "7z,python,notepad++,font"
+        argv[0] = "7z,python,notepad++,font,optimize"
     setupList = argv[0].split(',')
     printf("Running setup...")
 
@@ -158,5 +260,7 @@ def main(argv):
         setupFont()
     if "notepad++" in setupList:
         setupNpp()
+    if "optimize" in setupList:
+        optimizeWin10()
     printf("Setup done!")
     return 0
