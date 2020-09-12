@@ -1,4 +1,8 @@
 # By default all text files should normalize line endings
 * text=auto
+
 # The files inside app should be checked in and out as it is
 app/** -text
+
+# The files inside backup folder should be checked in and out as it is
+backup/** -text

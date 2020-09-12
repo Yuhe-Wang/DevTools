@@ -1,10 +1,12 @@
-
+import os
 import winreg
 from pathlib import Path
 
 from scripts.share.util import gs
 from scripts.share.util import call
 from scripts.share.util import printf
+from scripts.share.util import copyPath
+from scripts.share.util import removePath
 
 from scripts.share.winutil import regQuery
 from scripts.share.winutil import regAdd
@@ -119,12 +121,30 @@ def setupNpp():
     regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Dynamic",  1, winreg.REG_DWORD)
     regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Maxtext",  0x19, winreg.REG_DWORD)
     regAdd(r"HKCR\*\shellex\ContextMenuHandlers\ANotepad++64", '@', "{%s}" % clsid)
+    srcDir = gs.GitDir/"backup/Notepad++"
+    dstDir = Path(os.environ["appdata"])/"Notepad++"
+    if srcDir.is_dir() and dstDir.is_dir():
+        copyPath(srcDir, dstDir)
+
+
+def backup():
+    printf("Backup the notepad++ settings")
+    srcDir = Path(os.environ["appdata"])/"Notepad++"
+    dstDir = gs.GitDir/"backup/Notepad++"
+    if srcDir.is_dir() and dstDir.is_dir():
+        copyPath(srcDir, dstDir)
+        removePath(gs.GitDir/"backup/Notepad++/session.xml")  # No need to back up session
+    printf("Backup done!")
 
 
 def main(argv):
     if not argv:
         printf("Please specifiy the setup target or use all instead")
         return 1
+    if argv[0] == "backup":
+        backup()
+        return 0
+
     if argv[0] == "all":
         argv[0] = "7z,python,notepad++,font"
     setupList = argv[0].split(',')
