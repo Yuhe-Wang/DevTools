@@ -1,30 +1,36 @@
 import os
-import traceback
 import winreg
-from ctypes import windll
+import ctypes
 from pathlib import Path
 
 import win32con
 import win32event
 import win32process
+import win32net
 from win32com.shell.shell import ShellExecuteEx
 from win32com.shell import shellcon
 
-from util import cmdToStr
-from util import copyPath
+from scripts.share.util import cmdToStr
+from scripts.share.util import copyPath
 
 
 def isUserAdmin():
-    try:
-        # WARNING: requires Windows XP SP2 or higher!
-        return windll.shell32.IsUserAnAdmin()
-    except Exception:
-        traceback.print_exc()
-        print("Admin check failed, assuming not an admin.")
-        return False
+    groups = win32net.NetUserGetLocalGroups(os.environ["logonserver"], os.getlogin())
+    isadmin = False
+    for group in groups:
+        if group.lower().startswith("admin"):
+            isadmin = True
+            break
+    return isadmin
 
 
-def runAsAdmin(cmd, wait=True):
+def isAdminProcess():
+    return ctypes.windll.shell32.IsUserAnAdmin()
+
+
+def runAsAdmin(cmd, wait=True, show=False):
+    if not isUserAdmin():
+        return 1  # Cannot run as admin
     if isinstance(cmd, str):
         splits = cmd.split()
         exeFile = splits[0]
@@ -33,7 +39,11 @@ def runAsAdmin(cmd, wait=True):
         exeFile = cmd[0]
         params = cmdToStr(cmd[1:])
 
-    procInfo = ShellExecuteEx(nShow=win32con.SW_HIDE,
+    if show:
+        showWindow = win32con.SW_SHOW
+    else:
+        showWindow = win32con.SW_HIDE
+    procInfo = ShellExecuteEx(nShow=showWindow,
                               fMask=shellcon.SEE_MASK_NOCLOSEPROCESS,
                               lpVerb="runas",
                               lpFile=exeFile,
@@ -83,5 +93,6 @@ def regQuery(key, valueName='', view=winreg.KEY_WOW64_64KEY):
 
 
 def installFont(fontPath):
-    copyPath(fontPath, Path(os.environ["WINDIR"])/"Fonts")
+    # Don't copy if it has been installed
+    copyPath(fontPath, Path(os.environ["WINDIR"])/"Fonts", overwrite=False)
     regAdd(r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts", fontPath.name, "%s (TrueType)" % fontPath.stem)

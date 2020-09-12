@@ -7,6 +7,7 @@ def main(argv):
 
 
 modules = {
+    "adminCmd": "Open a admin cmd window",
+    "lint": "Run linter of the scripts",
     "setup": "Setup the dev tools",
-    "lint": "Run linter of the scripts"
 }

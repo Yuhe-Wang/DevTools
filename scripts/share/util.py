@@ -228,13 +228,15 @@ def removePath(p):
         exit(1)
 
 
-def copyFile(src, dst):
+def copyFile(src, dst, overwrite=True):
     ''' dst can be a file or a directory '''
     if dst.is_dir():
         # Get the real dst file path
         dst = dst/src.name
     if dst.is_file():
         # The dst already exists
+        if not overwrite:
+            return
         if not os.stat(str(dst))[0] & stat.S_IWRITE:
             os.chmod(str(dst), stat.S_IWRITE)
     elif not dst.parent.exists():
@@ -243,22 +245,22 @@ def copyFile(src, dst):
     shutil.copyfile(str(src), str(dst))
 
 
-def copyTree(src, dst):
+def copyTree(src, dst, overwrite=True):
     if dst.exists():
         assert dst.is_dir()
     for childSrc in src.rglob("*"):
         if childSrc.is_file():
             childDst = Path(str(childSrc).replace(str(src), str(dst), 1))
-            copyFile(childSrc, childDst)
+            copyFile(childSrc, childDst, overwrite)
 
 
-def copyPath(src, dst):
+def copyPath(src, dst, overwrite=True):
     ''' Copy a file or a directory (can overwrite readonly files) '''
     try:
         if src.is_dir():
-            copyTree(src, dst)
+            copyTree(src, dst, overwrite)
         elif src.is_file():
-            copyFile(src, dst)
+            copyFile(src, dst, overwrite)
     except Exception as e:
         printf("Failed to copy %s\n to %s\n" % (str(src), str(dst)), color=gs.YELLOW)
         printf(e)
