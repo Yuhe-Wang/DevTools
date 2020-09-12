@@ -76,10 +76,12 @@ def splitRegKey(key):
     return HKey, subKey
 
 
-def regAdd(key, value=None, valueName='', valueType=winreg.REG_SZ, view=winreg.KEY_WOW64_64KEY):
+def regAdd(key, valueName='@', value=None, valueType=winreg.REG_SZ, view=winreg.KEY_WOW64_64KEY):
     HKey, subKey = splitRegKey(key)
     keyHandle = winreg.CreateKeyEx(HKey, subKey, 0, access=winreg.KEY_ALL_ACCESS | view)
-    if value:
+    if value is not None:
+        if valueName == '@':
+            valueName = ''
         winreg.SetValueEx(keyHandle, valueName, 0, valueType, value)
 
 

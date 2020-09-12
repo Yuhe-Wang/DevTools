@@ -35,7 +35,7 @@ def setupPython():
                 if ret[2] == 0 and ret[0].split()[1].startswith("3."):
                     return
     # Cannot find python 3. Add python 3 in this repo to user path
-    regAdd(r"HKCU\Environment", ";".join(pathList), "Path")
+    regAdd(r"HKCU\Environment", "Path", ";".join(pathList))
 
 
 def setupFont():
@@ -89,19 +89,36 @@ def setup7z():
     for ext in iconDict:
         winreg.SetValue(winreg.HKEY_CLASSES_ROOT, ".%s" % ext, winreg.REG_SZ, "7-Zip.%s" % ext)
         iconIdx = iconDict[ext]
-        regAdd(r"HKCR\7-Zip.%s\DefaultIcon" % ext, "%s,%d" % (str(appDir/"7z.dll"), iconIdx))
-        regAdd(r"HKCR\7-Zip.%s\shell\open\command" % ext, '"%s" "%%1"' % str(appDir/"7zFM.exe"))
+        regAdd(r"HKCR\7-Zip.%s\DefaultIcon" % ext, '@', "%s,%d" % (str(appDir/"7z.dll"), iconIdx))
+        regAdd(r"HKCR\7-Zip.%s\shell\open\command" % ext, '@', '"%s" "%%1"' % str(appDir/"7zFM.exe"))
 
     # Setup the context menu
-    regAdd(r"HKCR\CLSID\{%s}" % clsid, "7-Zip Shell Extension")
-    regAdd(r"HKCR\CLSID\{%s}\InprocServer32" % clsid, str(appDir/"7-zip.dll"))
-    regAdd(r"HKCR\CLSID\{%s}\InprocServer32" % clsid, "Apartment", "ThreadingModel")
-    regAdd(r"HKCR\*\shellex\ContextMenuHandlers\7-Zip", "{%s}" % clsid)
-    regAdd(r"HKCR\Folder\shellex\ContextMenuHandlers\7-Zip", "{%s}" % clsid)
-    regAdd(r"HKCR\Directory\shellex\ContextMenuHandlers\7-Zip", "{%s}" % clsid)
-    regAdd(r"HKCR\Directory\shellex\DragDropHandlers\7-Zip", "{%s}" % clsid)
-    regAdd(r"HKCR\Drive\shellex\DragDropHandlers\7-Zip", "{%s}" % clsid)
+    regAdd(r"HKCR\CLSID\{%s}" % clsid, '@', "7-Zip Shell Extension")
+    regAdd(r"HKCR\CLSID\{%s}\InprocServer32" % clsid, '@', str(appDir/"7-zip.dll"))
+    regAdd(r"HKCR\CLSID\{%s}\InprocServer32" % clsid, "ThreadingModel", "Apartment")
+    regAdd(r"HKCR\*\shellex\ContextMenuHandlers\7-Zip", '@', "{%s}" % clsid)
+    regAdd(r"HKCR\Folder\shellex\ContextMenuHandlers\7-Zip", '@', "{%s}" % clsid)
+    regAdd(r"HKCR\Directory\shellex\ContextMenuHandlers\7-Zip", '@', "{%s}" % clsid)
+    regAdd(r"HKCR\Directory\shellex\DragDropHandlers\7-Zip", '@', "{%s}" % clsid)
+    regAdd(r"HKCR\Drive\shellex\DragDropHandlers\7-Zip", '@', "{%s}" % clsid)
     regAdd(r"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved")
+
+
+def setupNpp():
+    folder = "notepad++-7.8.9"
+    printf("Setup %s" % folder)
+    appDir = gs.GitDir/"app"/folder
+    clsid = "B298D29A-A6ED-11DE-BA8C-A68E55D89593"
+    regAdd(r"HKCR\CLSID\{%s}" % clsid, '@', "ANotepad++64")
+    regAdd(r"HKCR\CLSID\{%s}\InprocServer32" % clsid, '@', str(appDir/"NppShell_06.dll"))
+    regAdd(r"HKCR\CLSID\{%s}\InprocServer32" % clsid, "ThreadingModel", "Apartment")
+    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Title", "Edit with &Notepad++")
+    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Path", str(appDir/"notepad++.exe"))
+    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Custom", "")
+    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "ShowIcon", 1, winreg.REG_DWORD)
+    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Dynamic",  1, winreg.REG_DWORD)
+    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Maxtext",  0x19, winreg.REG_DWORD)
+    regAdd(r"HKCR\*\shellex\ContextMenuHandlers\ANotepad++64", '@', "{%s}" % clsid)
 
 
 def main(argv):
@@ -109,7 +126,7 @@ def main(argv):
         printf("Please specifiy the setup target or use all instead")
         return 1
     if argv[0] == "all":
-        argv[0] = "7z,python,font"
+        argv[0] = "7z,python,notepad++,font"
     setupList = argv[0].split(',')
     printf("Running setup...")
 
@@ -119,5 +136,7 @@ def main(argv):
         setup7z()
     if "font" in setupList:
         setupFont()
+    if "notepad++" in setupList:
+        setupNpp()
     printf("Setup done!")
     return 0
