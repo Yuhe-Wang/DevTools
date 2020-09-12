@@ -1,3 +1,17 @@
 # Python cache files
 __pycache__/
 *.py[cod]
+
+# Temp dir
+temp
+
+# Python pickle file
+*.pickle
+
+# VSCode
+.vscode
+
+.history
+
+# Cmder setting file
+*ConEmu.xml
