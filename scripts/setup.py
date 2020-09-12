@@ -6,6 +6,7 @@ from pathlib import Path
 from scripts.share.util import gs
 from scripts.share.util import regQuery
 from scripts.share.util import regAdd
+from scripts.share.util import installFont
 from scripts.share.util import call
 from scripts.share.util import calls
 from scripts.share.util import printf
@@ -36,6 +37,13 @@ def setupPython():
                     return
     # Cannot find python 3. Add python 3 in this repo to user path
     regAdd(r"HKCU\Environment", ";".join(pathList), "Path")
+
+
+def setupFont():
+    for p in (gs.GitDir/"fonts").iterdir():
+        if p.suffix.lower() == ".ttf":
+            printf("Installing font %s" % p.name)
+            installFont(p)
 
 
 def setup7z():
@@ -136,7 +144,7 @@ def main(argv):
         printf("Please specifiy the setup target or use all instead")
         return 1
     if argv[0] == "all":
-        argv[0] = "7z,python"
+        argv[0] = "7z,python,font"
     setupList = argv[0].split(',')
     printf("Running setup...")
 
@@ -144,5 +152,7 @@ def main(argv):
         setupPython()
     if "7z" in setupList:
         setup7z()
+    if "font" in setupList:
+        setupFont()
     printf("Setup done!")
     return 0

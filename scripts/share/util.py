@@ -2,6 +2,7 @@ import os
 import sys
 import socket
 import subprocess
+import shutil
 import atexit
 import types
 import traceback
@@ -409,6 +410,11 @@ def regQuery(key, valueName='', view=winreg.KEY_WOW64_64KEY):
     HKey, subKey = splitRegKey(key)
     keyHandle = winreg.OpenKeyEx(HKey, subKey, 0, access=winreg.KEY_READ|view)
     return winreg.QueryValueEx(keyHandle, valueName)
+
+
+def installFont(fontPath):
+    copyPath(fontPath, Path(os.environ["WINDIR"])/"Fonts")
+    regAdd(r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts", fontPath.name, "%s (TrueType)" % fontPath.stem)
 
 
 # Must create a setting instance
