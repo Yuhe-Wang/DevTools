@@ -3,11 +3,10 @@ import sys
 import socket
 import subprocess
 import shutil
+import stat
+import datetime
 import atexit
-import types
 import traceback
-import shlex
-import winreg
 from ctypes import windll
 from pathlib import Path
 
@@ -39,6 +38,9 @@ class GlobleSettings:
         # Convenient constants that can be calculated
         self.HostName = socket.gethostname()
         self.GitDir = Path(__file__).parent.parent.parent
+        self.TempDir = self.GitDir/"temp"
+        if not self.TempDir.exists():
+            self.TempDir.mkdir()
         # The print may have unicode
         os.environ["PYTHONIOENCODING"] = "UTF-8"
         # Prepare windows color print function
@@ -55,7 +57,7 @@ class GlobleSettings:
         atexit.register(self.exitHandler)
 
     def enableLog(self, prefix):
-        logDir = self.MergeTempPath/"log"
+        logDir = self.TempDir/"log"
         if not logDir.exists():
             logDir.mkdir()
         logFile = logDir/(prefix + '_' + dateStr("%Y_%m.log"))
@@ -207,60 +209,6 @@ def dateStr(fmt="%Y-%m-%d %X"):
     return datetime.datetime.today().strftime(fmt)
 
 
-def getProcessCmd(name, filterFunc=None):
-    '''
-    The name can be full module name or stem name
-    It will return the first cmd line matching filterFunc of given process
-    filterFunc is a bool function takes in cmd as parameter
-    '''
-    for proc in psutil.process_iter():
-        try:
-            procName = proc.name()  # The name() method may throw exception
-        except Exception:
-            continue
-        stemName = Path(procName).stem
-        if name in (procName, stemName):
-            try:
-                cmd = proc.cmdline()
-            except Exception:
-                cmd = [name]
-            if not filterFunc or filterFunc(cmd):
-                return cmd
-    return []  # Indicating the process is not running
-
-
-def killProcess(name):
-    '''
-    The name can be full module name or stem name
-    It will kill all processes matching the name
-    '''
-    for proc in psutil.process_iter():
-        try:
-            procName = proc.name()
-        except Exception:
-            continue
-        stemName = Path(procName).stem
-        if name in (procName, stemName):
-            proc.kill()
-
-
-def killProcessTree(pid, includeParent=True):
-    parent = psutil.Process(pid)
-    procList = parent.children(recursive=True)
-    procList.reverse()  # It modifies procList itself
-    if includeParent:
-        procList.append(parent)
-    try:
-        for p in procList:
-            p.kill()
-        # Wait until all processes terminate
-        while procList:
-            _, procList = psutil.wait_procs(procList, timeout=5)
-    except Exception:
-        # Exception that a process may end by itself before being killed
-        pass
-
-
 def funcRemoveReadOnly(_action, name, _exc):
     os.chmod(name, stat.S_IWRITE)
     os.unlink(name)
@@ -330,91 +278,6 @@ def moveFile(src, dst):
         # Make sure the parent directory exists
         dst.parent.mkdir(parents=True)
     shutil.move(str(src), str(dst))
-
-
-def isUserAdmin():
-    if os.name == 'nt':
-        try:
-            # WARNING: requires Windows XP SP2 or higher!
-            return windll.shell32.IsUserAnAdmin()
-        except:
-            traceback.print_exc()
-            print("Admin check failed, assuming not an admin.")
-            return False
-    else:
-        # Check for root on Posix
-        return os.getuid() == 0
-
-
-def runAsAdmin(cmd, wait=True):
-    if os.name != 'nt':
-        return 1
-    
-    import win32api, win32con, win32event, win32process
-    from win32com.shell.shell import ShellExecuteEx
-    from win32com.shell import shellcon
-
-    if isinstance(cmd, str):
-        splits = cmd.split()
-        exeFile = splits[0]
-        params = ' '.join(splits[1:])
-    else:
-        exeFile = cmd[0]
-        params = cmdToStr(cmd[1:])
-
-    procInfo = ShellExecuteEx(nShow=win32con.SW_HIDE,
-                              fMask=shellcon.SEE_MASK_NOCLOSEPROCESS,
-                              lpVerb="runas",
-                              lpFile=exeFile,
-                              lpParameters=params)
-
-    if wait:
-        procHandle = procInfo['hProcess']    
-        obj = win32event.WaitForSingleObject(procHandle, win32event.INFINITE)
-        rc = win32process.GetExitCodeProcess(procHandle)
-    else:
-        rc = 0
-
-    return rc
-
-
-def splitRegKey(key):
-    HKeyDict = {
-        "HKCR": winreg.HKEY_CLASSES_ROOT,
-        "HKCU": winreg.HKEY_CURRENT_USER,
-        "HKLM": winreg.HKEY_LOCAL_MACHINE,
-        "HKU": winreg.HKEY_USERS,
-        "HKCC": winreg.HKEY_CURRENT_CONFIG
-    }
-    idx = key.find("\\")
-    if idx != -1:
-        HKey = HKeyDict[key[0:idx]]
-        subKey = key[idx + 1:]
-    else:
-        HKey = HKeyDict[key]
-        subKey = ''
-    return HKey, subKey
-
-
-def regAdd(key, value=None, valueName='', valueType=winreg.REG_SZ, view=winreg.KEY_WOW64_64KEY):
-    HKey, subKey = splitRegKey(key)
-    keyHandle = winreg.CreateKeyEx(HKey, subKey, 0, access=winreg.KEY_ALL_ACCESS|view)
-    if value:
-        winreg.SetValueEx(keyHandle, valueName, 0, valueType, value)
-
-
-def regQuery(key, valueName='', view=winreg.KEY_WOW64_64KEY):
-    '''
-    return value, valueType
-    '''
-    HKey, subKey = splitRegKey(key)
-    keyHandle = winreg.OpenKeyEx(HKey, subKey, 0, access=winreg.KEY_READ|view)
-    return winreg.QueryValueEx(keyHandle, valueName)
-
-
-def installFont(fontPath):
-    copyPath(fontPath, Path(os.environ["WINDIR"])/"Fonts")
-    regAdd(r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts", fontPath.name, "%s (TrueType)" % fontPath.stem)
 
 
 # Must create a setting instance

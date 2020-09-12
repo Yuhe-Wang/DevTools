@@ -1,15 +1,14 @@
 
 import winreg
-import os
 from pathlib import Path
 
 from scripts.share.util import gs
-from scripts.share.util import regQuery
-from scripts.share.util import regAdd
-from scripts.share.util import installFont
 from scripts.share.util import call
-from scripts.share.util import calls
 from scripts.share.util import printf
+
+from scripts.share.winutil import regQuery
+from scripts.share.winutil import regAdd
+from scripts.share.winutil import installFont
 
 
 def setupPython():
@@ -103,40 +102,6 @@ def setup7z():
     regAdd(r"HKCR\Directory\shellex\DragDropHandlers\7-Zip", "{%s}" % clsid)
     regAdd(r"HKCR\Drive\shellex\DragDropHandlers\7-Zip", "{%s}" % clsid)
     regAdd(r"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved")
-
-    '''
-    HKCR\.lzma => 7-Zip.lzma
-    HKCR\7-Zip.lzma
-    HKCR\7-Zip.lzma\DefaultIcon => E:\Tools\app\7z-19.00\7z.dll,16
-    HKCR\7-Zip.lzma\shell\open\command => "E:\Tools\app\7z-19.00\7zFM.exe" "%1"
-
-    [HKEY_CLASSES_ROOT\CLSID\{23170F69-40C1-278A-1000-000100020000}]
-    @="7-Zip Shell Extension"
-
-    [HKEY_CLASSES_ROOT\CLSID\{23170F69-40C1-278A-1000-000100020000}\InprocServer32]
-    @="E:\\Tools\\app\\7z-19.00\\7-zip.dll"
-    "ThreadingModel"="Apartment"
-
-    [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved]
-    "{23170F69-40C1-278A-1000-000100020000}"="7-Zip Shell Extension"
-
-    [HKEY_CLASSES_ROOT\*\shellex\ContextMenuHandlers\7-Zip]
-    @="{23170F69-40C1-278A-1000-000100020000}"
-
-    [HKEY_CLASSES_ROOT\Folder\shellex\ContextMenuHandlers\7-Zip]
-    @="{23170F69-40C1-278A-1000-000100020000}"
-
-    [HKEY_CLASSES_ROOT\Directory\shellex\ContextMenuHandlers\7-Zip]
-    @="{23170F69-40C1-278A-1000-000100020000}"
-
-    [HKEY_CLASSES_ROOT\Directory\shellex\DragDropHandlers\7-Zip]
-    @="{23170F69-40C1-278A-1000-000100020000}"
-
-    [HKEY_CLASSES_ROOT\Drive\shellex\DragDropHandlers\7-Zip]
-    @="{23170F69-40C1-278A-1000-000100020000}"
-
-    [HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FileExts\OpenWithList]
-    '''
 
 
 def main(argv):

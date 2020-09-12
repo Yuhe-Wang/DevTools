@@ -8,4 +8,5 @@ def main(argv):
 
 modules = {
     "setup": "Setup the dev tools",
+    "lint": "Run linter of the scripts"
 }
