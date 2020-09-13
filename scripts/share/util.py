@@ -10,6 +10,8 @@ import traceback
 from ctypes import windll
 from pathlib import Path
 
+import psutil
+
 
 class GlobleSettings:
     def __init__(self):
@@ -280,6 +282,25 @@ def moveFile(src, dst):
         # Make sure the parent directory exists
         dst.parent.mkdir(parents=True)
     shutil.move(str(src), str(dst))
+
+
+def killProcess(name):
+    '''
+    The name can be full module name or stem name
+    It will kill all processes matching the name
+    '''
+    for proc in psutil.process_iter():
+        try:
+            procName = proc.name()
+        except Exception:
+            continue
+        stemName = Path(procName).stem
+        if os.name == "nt":
+            if name.lower() in (procName.lower(), stemName.lower()):
+                proc.kill()
+        else:
+            if name in (procName, stemName):
+                proc.kill()
 
 
 # Must create a setting instance

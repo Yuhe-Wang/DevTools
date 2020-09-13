@@ -86,30 +86,102 @@ def splitRegKey(key):
 
 def regAdd(key, valueName='@', value=None, valueType=None, view=winreg.KEY_WOW64_64KEY):
     HKey, subKey = splitRegKey(key)
-    keyHandle = winreg.CreateKeyEx(HKey, subKey, 0, access=winreg.KEY_ALL_ACCESS | view)
-    if value is not None:
-        if valueName == '@':
-            valueName = ''
+    changed = False
+    try:
+        keyHandle = winreg.OpenKeyEx(HKey, subKey, 0, access=winreg.KEY_ALL_ACCESS | view)
+    except OSError:
+        keyHandle = winreg.CreateKeyEx(HKey, subKey, 0, access=winreg.KEY_ALL_ACCESS | view)
+        changed = True
+
+    if value is not None:  # Need to write a value
         if valueType is None:  # Deduct the value type automatically
             if isinstance(value, str):
                 valueType = winreg.REG_SZ
             elif isinstance(value, int):
                 valueType = winreg.REG_DWORD
-            elif isinstance(value, bytes) or isinstance(value, bytearray):
+            elif isinstance(value, (bytes, bytearray)):
                 valueType = winreg.REG_BINARY
-        winreg.SetValueEx(keyHandle, valueName, 0, valueType, value)
+        if valueName == '@':
+            valueName = ''
+        if not changed:
+            try:
+                oldValue, oldValueType = winreg.QueryValueEx(keyHandle, valueName)
+                if value != oldValue or valueType != oldValueType:
+                    changed = True
+            except OSError:
+                changed = True
+        if changed:
+            winreg.SetValueEx(keyHandle, valueName, 0, valueType, value)
+    keyHandle.Close()
+    return changed
 
 
-def regQuery(key, valueName='', view=winreg.KEY_WOW64_64KEY):
-    '''
-    return value, valueType
-    '''
+def regQuery(key, valueName='@', view=winreg.KEY_WOW64_64KEY):
+    value = None
+    valueType = None
     HKey, subKey = splitRegKey(key)
-    keyHandle = winreg.OpenKeyEx(HKey, subKey, 0, access=winreg.KEY_READ | view)
-    return winreg.QueryValueEx(keyHandle, valueName)
+    with winreg.OpenKeyEx(HKey, subKey, 0, access=winreg.KEY_READ | view) as keyHandle:
+        if valueName == '@':
+            valueName = ''
+        value, valueType = winreg.QueryValueEx(keyHandle, valueName)
+    return (value, valueType)
+
+
+def deleteRegKeyRecursively(HKey, subKey, view=winreg.KEY_WOW64_64KEY):
+    # Delete all the sub keys first
+    keyExist = False
+    with winreg.OpenKeyEx(HKey, subKey, 0, access=winreg.KEY_ALL_ACCESS | view) as keyHandle:
+        keyExist = True
+        index = 0
+        while True:
+            try:
+                subKeyName = winreg.EnumKey(keyHandle, index)
+                deleteRegKeyRecursively(HKey, subKey + '\\' + subKeyName)
+            except OSError:
+                break
+            index += 1
+    # Then delete this key
+    if keyExist:
+        if view == winreg.KEY_WOW64_64KEY:
+            winreg.DeleteKeyEx(HKey, subKey, access=view, reserved=0)
+        else:
+            winreg.DeleteKey(HKey, subKey)
+
+
+def regDelete(key, valueName=None, view=winreg.KEY_WOW64_64KEY):
+    HKey, subKey = splitRegKey(key)
+    if valueName is None:
+        deleteRegKeyRecursively(HKey, subKey, view)
+    else:  # Only delete one value
+        if valueName == '@':
+            valueName = ''  # Delete the default value
+        with winreg.OpenKeyEx(HKey, subKey, 0, access=winreg.KEY_ALL_ACCESS | view) as keyHandle:
+            try:
+                winreg.DeleteValue(keyHandle, valueName)
+            except OSError:
+                pass
 
 
 def installFont(fontPath):
     # Don't copy if it has been installed
     copyPath(fontPath, Path(os.environ["WINDIR"])/"Fonts", overwrite=False)
     regAdd(r"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts", fontPath.name, "%s (TrueType)" % fontPath.stem)
+
+
+def addContextMenu(entry, description, cmd, icon=None,
+                   contexts=('*', "Directory\\background", "Directory", "Drive")):
+    '''
+    entry is the context menu item in register, i.e. cmdhere
+    description is the words displayed
+    icon is the icon resource path. Can be exe, dll, or icon image
+    cmd is the command to execute
+    contexts can be a string or string list/tuple.
+    Example: addContextMenu("cmdhere", "Open CMD here (&Q)", "cmd.exe", icon="cmd.exe")
+    '''
+    if isinstance(contexts, str):
+        contexts = [contexts]
+    for context in contexts:
+        regAdd(r"HKCR\%s\shell\%s" % (context, entry), '@', description)
+        if icon:
+            regAdd(r"HKCR\%s\shell\%s" % (context, entry), "icon", icon)
+        regAdd(r"HKCR\%s\shell\%s\command" % (context, entry), '@', cmd)

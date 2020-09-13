@@ -7,10 +7,13 @@ from scripts.share.util import call
 from scripts.share.util import printf
 from scripts.share.util import copyPath
 from scripts.share.util import removePath
+from scripts.share.util import killProcess
 
 from scripts.share.winutil import regQuery
 from scripts.share.winutil import regAdd
+from scripts.share.winutil import regDelete
 from scripts.share.winutil import installFont
+from scripts.share.winutil import addContextMenu
 
 
 def setupPython():
@@ -138,12 +141,35 @@ def backup():
 
 
 def optimizeWin10():
-    # Never merge task bar
+    # 隐藏任务栏搜索按钮/搜索框
+    restartExplorer = False
+    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Search",
+              "SearchboxTaskbarMode", 0):
+        restartExplorer = True
+    # <ExplorerNotify Type="Custom" msg="1A" lParam="TraySettings"/>
+
+    # 隐藏多任务按钮
+    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
+              "ShowTaskViewButton", 0):
+        restartExplorer = True
+    # <ExplorerNotify Type="Custom" msg="1A" lParam="TraySettings"/>
+
+    # 从不合并任务栏
     regAdd(r"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarGlomLevel", 2)
 
+    # 隐藏任务栏上的人脉
+    if (regAdd(r"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\People",
+               "PeopleBand", 0) or
+        regAdd(r"HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\Explorer",
+               "HidePeopleBar", 1)):
+        restartExplorer = True
+    # <Activate Restart="Explorer">
+
     # 显示开始菜单、任务栏、操作中心和标题栏的颜色
-    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize", "ColorPrevalence", 1)
-    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\DWM", "ColorPrevalence", 1)
+    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize", "ColorPrevalence", 1):
+        restartExplorer = True
+    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\DWM", "ColorPrevalence", 1):
+        restartExplorer = True
     # <ExplorerNotify Type="Custom" msg="111" wParam="#A220" Explorer="True">
 
     # 使开始菜单、任务栏、操作中心透明
@@ -161,47 +187,57 @@ def optimizeWin10():
     # 打开资源管理器时显示此电脑
     regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "LaunchTo", 1)
     # 显示所有文件扩展名
-    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "HideFileExt", 0)
+    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "HideFileExt", 0):
+        restartExplorer = True
     # <ExplorerNotify Type="Custom" msg="111" wParam="#A220" Explorer="True">
 
     # 隐藏快捷方式小箭头
-    copyPath(gs.GitDir/"res/icon/blank.ico", Path(os.environ["systemroot"]))
-    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Icons",
-           "29", r"%systemroot%\Blank.ico", winreg.REG_EXPAND_SZ)
+    if regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Icons",
+              "29", r"%systemroot%\Blank.ico", winreg.REG_EXPAND_SZ):
+        copyPath(gs.GitDir/"res/icon/blank.ico", Path(os.environ["systemroot"]))
+        restartExplorer = True
 
     # 创建快捷方式时不添 快捷方式 文字
-    regAdd(r"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer", "Link", b"00000000")
-    # Restart="Explorer"
+    if regAdd(r"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer",
+              "Link", bytes.fromhex("00000000")):
+        restartExplorer = True
 
     # 收起资源管理器功能区 ribbon
-    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Ribbon",
-           "MinimizedStateTabletModeOff", 1)
+    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Ribbon",
+              "MinimizedStateTabletModeOff", 1):
+        restartExplorer = True
     # <ExplorerNotify Type="Custom" msg="111" wParam="#A220" Explorer="True">
 
     # 禁止自动播放
-    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers",
-           "DisableAutoplay", 1)
+    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers",
+              "DisableAutoplay", 1):
+        restartExplorer = True
     # <ExplorerNotify Type="Custom" msg="111" wParam="#A220" Explorer="True)
 
     # 在桌面显示我的电脑
-    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
-           "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", 0)
+    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
+              "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", 0):
+        restartExplorer = True
     # <ExplorerNotify Type="AssocChanged>
     # 在桌面显示回收站
-    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
-           "{645FF040-5081-101B-9F08-00AA002F954E}", 0)
+    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
+              "{645FF040-5081-101B-9F08-00AA002F954E}", 0):
+        restartExplorer = True
     # <ExplorerNotify Type="AssocChanged>
     # 在桌面显示控制面板
-    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
-           "{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}", 0)
+    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
+              "{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}", 0):
+        restartExplorer = True
     # <ExplorerNotify Type="AssocChanged>
     # 在桌面显示用户文件夹
-    # regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
-    #       "{59031a47-3f72-44a7-89c5-5595fe6b30ee}", 0)
+    # if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
+    #           "{59031a47-3f72-44a7-89c5-5595fe6b30ee}", 0):
+    #     restartExplorer = True
     # <ExplorerNotify Type="AssocChanged>
     # 在桌面显示网络
-    # regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
-    #       "{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", 0)
+    # if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
+    #           "{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", 0):
+    #     restartExplorer = True
     # <ExplorerNotify Type="AssocChanged>
 
     # 启用自动换行
@@ -234,9 +270,15 @@ def optimizeWin10():
     regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
            ".tga", "PhotoViewer.FileAssoc.Tiff")
 
-    # <ExplorerNotify Type="Custom" msg="111" wParam="#A220" Explorer="True">
-    # <ExplorerNotify Type="AssocChanged>
-    # Restart="Explorer"
+    # Set accent color
+    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\DWM", "AccentColor", 0x00748501)
+    regDelete(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\DWM", "AccentColorInactive")
+
+    addContextMenu("cmdhere", "Open CMD here (&Q)", 'cmd.exe /s /k pushd "%V"', icon="cmd.exe")
+
+    if restartExplorer:
+        # Windows 10 will automatically start explorer after the process was killed
+        killProcess("Explorer")
 
 
 def main(argv):
