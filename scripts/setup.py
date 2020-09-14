@@ -307,7 +307,7 @@ def setupConEmu():
     regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-BaseDir", str(dstDir))
     regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-CfgFile", '')
     regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-Config", '')
-    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-AppList", "explorer.exe", valueType=winreg.REG_MULTI_SZ)
+    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-AppList", ["explorer.exe"])
 
     # Startup cmd
     startupCmd = '"%s" -SetDefTerm -Detached -MinTSA' % str(dstDir/"ConEmu64.exe")

@@ -99,6 +99,8 @@ def regAdd(key, valueName='@', value=None, valueType=None, view=winreg.KEY_WOW64
                 valueType = winreg.REG_SZ
             elif isinstance(value, int):
                 valueType = winreg.REG_DWORD
+            elif isinstance(value, list):
+                valueType = winreg.REG_MULTI_SZ
             elif isinstance(value, (bytes, bytearray)):
                 valueType = winreg.REG_BINARY
         if valueName == '@':
