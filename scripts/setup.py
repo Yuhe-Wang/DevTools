@@ -134,9 +134,16 @@ def backup():
     printf("Backup the notepad++ settings")
     srcDir = Path(os.environ["appdata"])/"Notepad++"
     dstDir = gs.GitDir/"backup/Notepad++"
-    if srcDir.is_dir() and dstDir.is_dir():
+    if srcDir.is_dir():
         copyPath(srcDir, dstDir)
         removePath(gs.GitDir/"backup/Notepad++/session.xml")  # No need to back up session
+
+    printf("Backup the ConEmu settings")
+    folder = "conemu-20.7.13"
+    srcPath = gs.GitDir/"app"/folder/"ConEmu.xml"
+    dstDir = gs.GitDir/"backup/conemu"
+    if srcPath.is_file():
+        copyPath(srcPath, dstDir)
     printf("Backup done!")
 
 
@@ -281,6 +288,35 @@ def optimizeWin10():
         killProcess("Explorer")
 
 
+def setupConEmu():
+    folder = "conemu-20.7.13"
+    # Copy the config
+    srcDir = gs.GitDir/"backup/conemu"
+    dstDir = gs.GitDir/"app"/folder
+    if srcDir.is_dir():
+        copyPath(srcDir, dstDir)
+    # Setup the reg
+    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-Enabled", 1)
+    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-Agressive", 1)
+    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-NoInjects", 0)
+    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-NewWindow", 0)
+    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-DebugLog", 0)
+    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-Confirm", 2)
+    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-Flags", 34470)
+    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-ConEmuExe", str(dstDir/"ConEmu64.exe"))
+    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-BaseDir", str(dstDir))
+    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-CfgFile", '')
+    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-Config", '')
+    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-AppList", "explorer.exe", valueType=winreg.REG_MULTI_SZ)
+
+    # Startup cmd
+    startupCmd = '"%s" -SetDefTerm -Detached -MinTSA' % str(dstDir/"ConEmu64.exe")
+    regAdd(r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+           "ConEmuDefaultTerminal", startupCmd)
+    # Run setup once
+    call(startupCmd, DETACH=True)
+
+
 def main(argv):
     if not argv:
         printf("Please specifiy the setup target or use all instead")
@@ -290,7 +326,7 @@ def main(argv):
         return 0
 
     if argv[0] == "all":
-        argv[0] = "7z,python,notepad++,font,optimize"
+        argv[0] = "7z,python,notepad++,font,optimize,conemu"
     setupList = argv[0].split(',')
     printf("Running setup...")
 
@@ -304,5 +340,7 @@ def main(argv):
         setupNpp()
     if "optimize" in setupList:
         optimizeWin10()
+    if "conemu" in setupList:
+        setupConEmu()
     printf("Setup done!")
     return 0
