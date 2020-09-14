@@ -11,6 +11,7 @@ from scripts.share.util import killProcess
 
 from scripts.share.winutil import regQuery
 from scripts.share.winutil import regAdd
+from scripts.share.winutil import regAddList
 from scripts.share.winutil import regDelete
 from scripts.share.winutil import installFont
 from scripts.share.winutil import addContextMenu
@@ -115,14 +116,16 @@ def setupNpp():
     appDir = gs.GitDir/"app"/folder
     clsid = "B298D29A-A6ED-11DE-BA8C-A68E55D89593"
     regAdd(r"HKCR\CLSID\{%s}" % clsid, '@', "ANotepad++64")
-    regAdd(r"HKCR\CLSID\{%s}\InprocServer32" % clsid, '@', str(appDir/"NppShell_06.dll"))
-    regAdd(r"HKCR\CLSID\{%s}\InprocServer32" % clsid, "ThreadingModel", "Apartment")
-    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Title", "Edit with &Notepad++")
-    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Path", str(appDir/"notepad++.exe"))
-    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Custom", '')
-    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "ShowIcon", 1)
-    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Dynamic",  1)
-    regAdd(r"HKCR\CLSID\{%s}\Settings" % clsid, "Maxtext",  25)
+    regAddList(r"HKCR\CLSID\{%s}\InprocServer32" % clsid, [
+               ('@', str(appDir/"NppShell_06.dll")),
+               ("ThreadingModel", "Apartment")])
+    regAddList(r"HKCR\CLSID\{%s}\Settings" % clsid, [
+               ("Title", "Edit with &Notepad++"),
+               ("Path", str(appDir/"notepad++.exe")),
+               ("Custom", ''),
+               ("ShowIcon", 1),
+               ("Dynamic",  1),
+               ("Maxtext",  25)])
     regAdd(r"HKCR\*\shellex\ContextMenuHandlers\ANotepad++64", '@', "{%s}" % clsid)
     srcDir = gs.GitDir/"backup/Notepad++"
     dstDir = Path(os.environ["appdata"])/"Notepad++"
@@ -256,26 +259,17 @@ def optimizeWin10():
     regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\SQMClient\Windows", "CEIPEnable", 0)
 
     # 启用 Windows 照片查看器
-    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
-           ".jpg", "PhotoViewer.FileAssoc.Tiff")
-    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
-           ".png", "PhotoViewer.FileAssoc.Tiff")
-    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
-           ".jpeg", "PhotoViewer.FileAssoc.Tiff")
-    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
-           ".bmp", "PhotoViewer.FileAssoc.Tiff")
-    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
-           ".jpe", "PhotoViewer.FileAssoc.Tiff")
-    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
-           ".jfif", "PhotoViewer.FileAssoc.Tiff")
-    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
-           ".dib", "PhotoViewer.FileAssoc.Tiff")
-    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
-           ".ico", "PhotoViewer.FileAssoc.Tiff")
-    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
-           ".gif", "PhotoViewer.FileAssoc.Tiff")
-    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations",
-           ".tga", "PhotoViewer.FileAssoc.Tiff")
+    regAddList(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Photo Viewer\Capabilities\FileAssociations", [
+               (".jpg", "PhotoViewer.FileAssoc.Tiff"),
+               (".png", "PhotoViewer.FileAssoc.Tiff"),
+               (".jpeg", "PhotoViewer.FileAssoc.Tiff"),
+               (".bmp", "PhotoViewer.FileAssoc.Tiff"),
+               (".jpe", "PhotoViewer.FileAssoc.Tiff"),
+               (".jfif", "PhotoViewer.FileAssoc.Tiff"),
+               (".dib", "PhotoViewer.FileAssoc.Tiff"),
+               (".ico", "PhotoViewer.FileAssoc.Tiff"),
+               (".gif", "PhotoViewer.FileAssoc.Tiff"),
+               (".tga", "PhotoViewer.FileAssoc.Tiff")])
 
     # Set accent color
     regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\DWM", "AccentColor", 0x00748501)
@@ -296,18 +290,18 @@ def setupConEmu():
     if srcDir.is_dir():
         copyPath(srcDir, dstDir)
     # Setup the reg
-    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-Enabled", 1)
-    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-Agressive", 1)
-    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-NoInjects", 0)
-    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-NewWindow", 0)
-    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-DebugLog", 0)
-    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-Confirm", 2)
-    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-Flags", 34470)
-    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-ConEmuExe", str(dstDir/"ConEmu64.exe"))
-    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-BaseDir", str(dstDir))
-    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-CfgFile", '')
-    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-Config", '')
-    regAdd(r"HKCU\SOFTWARE\ConEmu", "DefTerm-AppList", ["explorer.exe"])
+    regAddList(r"HKCU\SOFTWARE\ConEmu", [
+               ("DefTerm-Enabled", 1),
+               ("DefTerm-NoInjects", 0),
+               ("DefTerm-NewWindow", 0),
+               ("DefTerm-DebugLog", 0),
+               ("DefTerm-Confirm", 2),
+               ("DefTerm-Flags", 34470),
+               ("DefTerm-ConEmuExe", str(dstDir/"ConEmu64.exe"),),
+               ("DefTerm-BaseDir", str(dstDir),),
+               ("DefTerm-CfgFile", ''),
+               ("DefTerm-Config", ''),
+               ("DefTerm-AppList", ["explorer.exe"])])
 
     # Startup cmd
     startupCmd = '"%s" -SetDefTerm -Detached -MinTSA' % str(dstDir/"ConEmu64.exe")

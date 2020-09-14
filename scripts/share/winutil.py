@@ -118,6 +118,19 @@ def regAdd(key, valueName='@', value=None, valueType=None, view=winreg.KEY_WOW64
     return changed
 
 
+def regAddList(key, valueList, view=winreg.KEY_WOW64_64KEY):
+    changed = False
+    for entry in valueList:
+        valueName = entry[0]
+        value = entry[1]
+        valueType = None
+        if len(entry) >= 3:
+            valueType = entry[2]
+        if regAdd(key, valueName, value, valueType, view):
+            changed = True
+    return changed
+
+
 def regQuery(key, valueName='@', view=winreg.KEY_WOW64_64KEY):
     value = None
     valueType = None
