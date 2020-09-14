@@ -14,6 +14,7 @@ from scripts.share.winutil import regAdd
 from scripts.share.winutil import regDelete
 from scripts.share.winutil import installFont
 from scripts.share.winutil import addContextMenu
+from scripts.share.winutil import setOpenWith
 
 
 def setupPython():
@@ -92,10 +93,9 @@ def setup7z():
 
     appDir = gs.GitDir/"app"/folder
     for ext in iconDict:
-        winreg.SetValue(winreg.HKEY_CLASSES_ROOT, ".%s" % ext, winreg.REG_SZ, "7-Zip.%s" % ext)
-        iconIdx = iconDict[ext]
-        regAdd(r"HKCR\7-Zip.%s\DefaultIcon" % ext, '@', "%s,%d" % (str(appDir/"7z.dll"), iconIdx))
-        regAdd(r"HKCR\7-Zip.%s\shell\open\command" % ext, '@', '"%s" "%%1"' % str(appDir/"7zFM.exe"))
+        setOpenWith(ext, str(appDir/"7zFM.exe"),
+                    icon="%s,%d" % (str(appDir/"7z.dll"), iconDict[ext]),
+                    regKeyName="7-Zip.%s" % ext)
 
     # Setup the context menu
     regAdd(r"HKCR\CLSID\{%s}" % clsid, '@', "7-Zip Shell Extension")

@@ -185,3 +185,12 @@ def addContextMenu(entry, description, cmd, icon=None,
         if icon:
             regAdd(r"HKCR\%s\shell\%s" % (context, entry), "icon", icon)
         regAdd(r"HKCR\%s\shell\%s\command" % (context, entry), '@', cmd)
+
+
+def setOpenWith(ext, exe, icon=None, regKeyName=None):
+    if regKeyName is None:
+        regKeyName = "%sfile" % ext
+    regAdd(r"HKCR\.%s" % ext, '@', regKeyName)
+    if icon:
+        regAdd(r"HKCR\%s\DefaultIcon" % regKeyName, '@', icon)
+    regAdd(r"HKCR\%s\shell\open\command" % regKeyName, '@', '"%s" "%%1"' % exe)
