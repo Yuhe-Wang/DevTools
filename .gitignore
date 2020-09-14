@@ -11,7 +11,6 @@ temp
 # VSCode
 .vscode
 
-.history
-
 # Cmder setting file
 *ConEmu.xml
+
