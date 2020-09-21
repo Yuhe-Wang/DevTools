@@ -147,6 +147,14 @@ def backup():
     dstDir = gs.GitDir/"backup/conemu"
     if srcPath.is_file():
         copyPath(srcPath, dstDir)
+
+    printf("Backup the Sumatra PDF settings")
+    folder = "sumatra-3.2"
+    srcPath = gs.GitDir/"app"/folder/"SumatraPDF-settings.txt"
+    dstDir = gs.GitDir/"backup/sumatra"
+    if srcPath.is_file():
+        copyPath(srcPath, dstDir)
+
     printf("Backup done!")
 
 
@@ -320,6 +328,20 @@ def setupAutoHotKey():
     setOpenWith("ahk", str(exePath), icon=str(exePath) + ",1", regKeyName="AutoHotkeyScript")
 
 
+def setupSumatraPdf():
+    folder = "sumatra-3.0"
+    printf("Setup %s..." % folder)
+    exePath = gs.GitDir/"app"/folder/"SumatraPDF.exe"
+    regAdd(r"HKCR\Applications\SumatraPDF.exe\DefaultIcon", '@', str(exePath) + ",1")
+    regAdd(r"HKCR\Applications\SumatraPDF.exe\Shell\Open\Command", '@', '"%s" "%%1" %%*' % str(exePath))
+    regAdd(r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.pdf\OpenWithList", "a", "SumatraPDF")
+    # Copy the config
+    srcDir = gs.GitDir/"backup/sumatra"
+    dstDir = gs.GitDir/"app"/folder
+    if srcDir.is_dir():
+        copyPath(srcDir, dstDir)
+
+
 def main(argv):
     if not argv:
         printf("Please specifiy the setup target or use all instead")
@@ -329,7 +351,7 @@ def main(argv):
         return 0
 
     if argv[0] == "all":
-        argv[0] = "7z,python,notepad++,font,optimize,conemu,ahk"
+        argv[0] = "7z,python,notepad++,font,optimize,conemu,ahk,pdf"
     setupList = argv[0].split(',')
     printf("Running setup...")
 
@@ -347,5 +369,7 @@ def main(argv):
         setupConEmu()
     if "ahk" in setupList:
         setupAutoHotKey()
+    if "pdf" in setupList:
+        setupSumatraPdf()
     printf("Setup done!")
     return 0
