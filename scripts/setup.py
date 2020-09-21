@@ -151,6 +151,7 @@ def backup():
 
 
 def optimizeWin10():
+    printf("Optimize win10 settings...")
     # 隐藏任务栏搜索按钮/搜索框
     restartExplorer = False
     if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Search",
@@ -284,6 +285,7 @@ def optimizeWin10():
 
 def setupConEmu():
     folder = "conemu-20.7.13"
+    printf("Setup %s..." % folder)
     # Copy the config
     srcDir = gs.GitDir/"backup/conemu"
     dstDir = gs.GitDir/"app"/folder
@@ -311,6 +313,13 @@ def setupConEmu():
     call(startupCmd, DETACH=True)
 
 
+def setupAutoHotKey():
+    folder = "ahk-1.1.33"
+    printf("Setup %s..." % folder)
+    exePath = gs.GitDir/"app"/folder/"AutoHotkeyU64.exe"
+    setOpenWith("ahk", str(exePath), icon=str(exePath) + ",1", regKeyName="AutoHotkeyScript")
+
+
 def main(argv):
     if not argv:
         printf("Please specifiy the setup target or use all instead")
@@ -320,7 +329,7 @@ def main(argv):
         return 0
 
     if argv[0] == "all":
-        argv[0] = "7z,python,notepad++,font,optimize,conemu"
+        argv[0] = "7z,python,notepad++,font,optimize,conemu,ahk"
     setupList = argv[0].split(',')
     printf("Running setup...")
 
@@ -336,5 +345,7 @@ def main(argv):
         optimizeWin10()
     if "conemu" in setupList:
         setupConEmu()
+    if "ahk" in setupList:
+        setupAutoHotKey()
     printf("Setup done!")
     return 0

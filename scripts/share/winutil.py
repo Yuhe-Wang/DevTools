@@ -208,4 +208,6 @@ def setOpenWith(ext, exe, icon=None, regKeyName=None):
     regAdd(r"HKCR\.%s" % ext, '@', regKeyName)
     if icon:
         regAdd(r"HKCR\%s\DefaultIcon" % regKeyName, '@', icon)
+    elif icon == "exe":
+        regAdd(r"HKCR\%s\DefaultIcon" % regKeyName, '@', exe)
     regAdd(r"HKCR\%s\shell\open\command" % regKeyName, '@', '"%s" "%%1"' % exe)
