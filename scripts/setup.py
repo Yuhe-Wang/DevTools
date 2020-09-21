@@ -326,6 +326,10 @@ def setupAutoHotKey():
     printf("Setup %s..." % folder)
     exePath = gs.GitDir/"app"/folder/"AutoHotkeyU64.exe"
     setOpenWith("ahk", str(exePath), icon=1, regKeyName="AutoHotkeyScript")
+    startupCmd = 'cmd /c "%s"' % str(gs.GitDir/"app"/folder/"runAhk.bat")
+    regAdd(r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+           "AutoHotKeyScript", startupCmd)
+    call(startupCmd)
 
 
 def setupSumatraPdf():
