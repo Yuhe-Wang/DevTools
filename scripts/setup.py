@@ -325,13 +325,14 @@ def setupAutoHotKey():
     folder = "ahk-1.1.33"
     printf("Setup %s..." % folder)
     exePath = gs.GitDir/"app"/folder/"AutoHotkeyU64.exe"
-    setOpenWith("ahk", str(exePath), icon=str(exePath) + ",1", regKeyName="AutoHotkeyScript")
+    setOpenWith("ahk", str(exePath), icon=1, regKeyName="AutoHotkeyScript")
 
 
 def setupSumatraPdf():
     folder = "sumatra-3.0"
     printf("Setup %s..." % folder)
     exePath = gs.GitDir/"app"/folder/"SumatraPDF.exe"
+    # Setup open with. Need special handling for pdf
     regAdd(r"HKCR\Applications\SumatraPDF.exe\DefaultIcon", '@', str(exePath) + ",1")
     regAdd(r"HKCR\Applications\SumatraPDF.exe\Shell\Open\Command", '@', '"%s" "%%1" %%*' % str(exePath))
     regAdd(r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.pdf\OpenWithList", "a", "SumatraPDF")
