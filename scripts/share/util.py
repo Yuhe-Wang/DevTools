@@ -244,7 +244,10 @@ def copyFile(src, dst, overwrite=True):
     elif not dst.parent.exists():
         # Make sure the parent directory exists
         dst.parent.mkdir(parents=True)
-    shutil.copyfile(str(src), str(dst))
+    try:
+        shutil.copyfile(str(src), str(dst))
+    except shutil.SameFileError:
+        pass
 
 
 def copyTree(src, dst, overwrite=True):
