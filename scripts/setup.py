@@ -7,6 +7,7 @@ from scripts.share.util import call
 from scripts.share.util import printf
 from scripts.share.util import copyPath
 from scripts.share.util import removePath
+from scripts.share.util import getProcessCmd
 from scripts.share.util import killProcess
 
 from scripts.share.winutil import regQuery
@@ -318,7 +319,8 @@ def setupConEmu():
     regAdd(r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
            "ConEmuDefaultTerminal", startupCmd)
     # Run setup once
-    call(startupCmd, DETACH=True)
+    if not getProcessCmd("ConEmu64"):
+        call(startupCmd, DETACH=True)
 
 
 def setupAutoHotKey():

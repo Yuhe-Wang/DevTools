@@ -287,6 +287,28 @@ def moveFile(src, dst):
     shutil.move(str(src), str(dst))
 
 
+def getProcessCmd(name, filterFunc=None):
+    '''
+    The name can be full module name or stem name
+    It will return the first cmd line matching filterFunc of given process
+    filterFunc is a bool function takes in cmd as parameter
+    '''
+    for proc in psutil.process_iter():
+        try:
+            procName = proc.name()  # The name() method may throw exception
+        except Exception:
+            continue
+        stemName = Path(procName).stem
+        if name in (procName, stemName):
+            try:
+                cmd = proc.cmdline()
+            except Exception:
+                cmd = [name]
+            if not filterFunc or filterFunc(cmd):
+                return cmd
+    return []  # Indicating the process is not running
+
+
 def killProcess(name):
     '''
     The name can be full module name or stem name
