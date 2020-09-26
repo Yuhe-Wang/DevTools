@@ -349,6 +349,23 @@ def setupSumatraPdf():
         copyPath(srcDir, dstDir)
 
 
+def setupListary():
+    folder = "listary-5.00.2843"
+    printf("Setup %s..." % folder)
+    exePath = gs.GitDir/"app"/folder/"Listary.exe"
+    startupCmd = '"%s" -startup' % str(exePath)
+    regAdd(r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+           "Listary", startupCmd)
+    if not getProcessCmd("Listary"):
+        call(startupCmd, DETACH=True)
+    if call("sc query ListaryService")[2] != 0:
+        cmd = ('sc create ListaryService binPath= "%s" start= auto group= "Extended Base" ' %
+            str(gs.GitDir/"app"/folder/"ListaryService.exe"))
+        call(cmd)
+        cmd = "sc start ListaryService"
+        call(cmd)
+
+
 def main(argv):
     if not argv:
         printf("Please specifiy the setup target or use all instead")
@@ -358,7 +375,7 @@ def main(argv):
         return 0
 
     if argv[0] == "all":
-        argv[0] = "7z,python,notepad++,font,optimize,conemu,ahk,pdf"
+        argv[0] = "7z,python,notepad++,font,optimize,conemu,ahk,pdf,listary"
     setupList = argv[0].split(',')
     printf("Running setup...")
 
@@ -378,5 +395,7 @@ def main(argv):
         setupAutoHotKey()
     if "pdf" in setupList:
         setupSumatraPdf()
+    if "listary" in setupList:
+        setupListary()
     printf("Setup done!")
     return 0
