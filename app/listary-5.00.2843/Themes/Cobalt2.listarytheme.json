@@ -1,0 +1,16 @@
+{
+   "background_color": 4279710534.0,
+   "border_color": 2652320582.0,
+   "description": "Inspired by Wes's Sublime Text theme https://github.com/wesbos/cobalt2/",
+   "grid_line_color": 4279645255.0,
+   "name": "Cobalt2",
+   "scrollbar_color": 1356191189.0,
+   "search_box_cue_banner_color": 4291152079.0,
+   "search_box_text_color": 4294952259.0,
+   "search_result_comment_color": 4290953922.0,
+   "search_result_text_color": 4289111718.0,
+   "selected_background_color": 4279912032.0,
+   "selected_search_result_comment_color": 4294952259.0,
+   "selected_search_result_text_color": 4294967295.0,
+   "version": 1
+}

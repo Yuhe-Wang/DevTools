@@ -1,0 +1,7 @@
+/listary_service_log.log
+
+/UserData/*
+
+!/UserData/Preferences.json
+
+CrashRpt

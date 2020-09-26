@@ -1,0 +1,16 @@
+{
+   "background_color": 4280627768.0,
+   "border_color": 0.0,
+   "description": "Inspired by artifactdev's Alfred theme http://www.packal.org/theme/material-theme",
+   "grid_line_color": 0.0,
+   "name": "Material",
+   "scrollbar_color": 419430400.0,
+   "search_box_cue_banner_color": 4291152079.0,
+   "search_box_text_color": 4278228872.0,
+   "search_result_comment_color": 4285690482.0,
+   "search_result_text_color": 4290164406.0,
+   "selected_background_color": 4291811549.0,
+   "selected_search_result_comment_color": 4285690482.0,
+   "selected_search_result_text_color": 4278221163.0,
+   "version": 1
+}
