@@ -137,7 +137,7 @@ def setupNpp():
 def backup():
     printf("Backup the notepad++ settings")
     srcDir = Path(os.environ["appdata"])/"Notepad++"
-    dstDir = gs.GitDir/"backup/Notepad++"
+    dstDir = gs.GitDir/"backup/notepad++"
     if srcDir.is_dir():
         copyPath(srcDir, dstDir)
         removePath(gs.GitDir/"backup/Notepad++/session.xml")  # No need to back up session
@@ -155,6 +155,12 @@ def backup():
     dstDir = gs.GitDir/"backup/sumatra"
     if srcPath.is_file():
         copyPath(srcPath, dstDir)
+
+    printf("Backup the Listary settings")
+    srcPath = Path(os.environ["appdata"])/"Listary/UserData/Preferences.json"
+    dstPath = gs.GitDir/"backup/Listary/UserData/Preferences.json"
+    if srcPath.is_file():
+        copyPath(srcPath, dstPath)
 
     printf("Backup done!")
 
@@ -364,6 +370,11 @@ def setupListary():
         call(cmd)
         cmd = "sc start ListaryService"
         call(cmd)
+    # Copy the config
+    srcPath = gs.GitDir/"backup/listary/UserData/Preferences.json"
+    dstPath = Path(os.environ["appdata"])/"Listary/UserData/Preferences.json"
+    if srcPath.is_file():
+        copyPath(srcPath, dstPath)
 
 
 def main(argv):
