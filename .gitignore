@@ -1,6 +1,6 @@
 # Python cache files
 __pycache__/
-*.py[cod]
+*.py[co]
 
 # Temp dir
 temp
