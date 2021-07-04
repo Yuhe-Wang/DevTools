@@ -288,9 +288,27 @@ def optimizeWin10():
                (".tga", "PhotoViewer.FileAssoc.Tiff")])
 
     # Set accent color
+    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 1):
+        restartExplorer = True
+    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize", "SystemUsesLightTheme", 0):
+        restartExplorer = True
     regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\DWM", "AccentColor", 0x00748501)
     regDelete(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\DWM", "AccentColorInactive")
 
+    # Clear the check box in explorer
+    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "AutoCheckSelect", 0)
+
+    # Change the wall paper
+    regAdd(r"HKEY_CURRENT_USER\control panel\desktop", "WallPaper", r"c:\windows\web\wallpaper\theme1\img13.jpg")
+    call("RunDll32.exe USER32.DLL UpdatePerUserSystemParameters")
+
+    # Close Feeds
+    regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Feeds", "ShellFeedsTaskbarViewMode", 2)
+
+    # Disable one drive
+    regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\OneDrive", "DisableFileSyncNGSC", 1)
+
+    # Add cmd context menu
     addContextMenu("cmdhere", "Open CMD here (&Q)", 'cmd.exe /s /k pushd "%V"', icon="cmd.exe")
 
     if restartExplorer:
