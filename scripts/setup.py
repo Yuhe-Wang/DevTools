@@ -288,9 +288,11 @@ def optimizeWin10():
                (".tga", "PhotoViewer.FileAssoc.Tiff")])
 
     # Set accent color
-    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 1):
+    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+              "AppsUseLightTheme", 1):
         restartExplorer = True
-    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize", "SystemUsesLightTheme", 0):
+    if regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+              "SystemUsesLightTheme", 0):
         restartExplorer = True
     regAdd(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\DWM", "AccentColor", 0x00748501)
     regDelete(r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\DWM", "AccentColorInactive")
@@ -395,6 +397,19 @@ def setupListary():
         copyPath(srcPath, dstPath)
 
 
+def setupGit():
+    printf("Setup git... (involves persional info)")
+    nppFolder = "notepad++-7.8.9"
+    nppPath = gs.GitDir/"app"/nppFolder/"notepad++.exe"
+    editorCmd = "'%s' -multiInst -notabbar -nosession -noPlugin" % str(nppPath)
+    cmd = 'git config --global core.editor "%s"' % editorCmd
+    call(cmd)
+    cmd = 'git config --global user.email yuhewang.ustc@gmail.com'
+    call(cmd)
+    cmd = 'git config --global user.name "Yuhe Wang"'
+    call(cmd)
+
+
 def main(argv):
     if not argv:
         printf("Please specifiy the setup target or use all instead")
@@ -404,7 +419,7 @@ def main(argv):
         return 0
 
     if argv[0] == "all":
-        argv[0] = "7z,python,notepad++,font,optimize,conemu,ahk,pdf,listary"
+        argv[0] = "7z,python,notepad++,git,font,optimize,conemu,ahk,pdf,listary"
     setupList = argv[0].split(',')
     printf("Running setup...")
 
@@ -416,6 +431,8 @@ def main(argv):
         setupFont()
     if "notepad++" in setupList:
         setupNpp()
+    if "git" in setupList:
+        setupGit()
     if "optimize" in setupList:
         optimizeWin10()
     if "conemu" in setupList:
