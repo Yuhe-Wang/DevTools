@@ -91,7 +91,7 @@ def cmdToStr(cmd):
         return cmd
 
 
-def call(cmd, ENV=None, INPUT=None, DIR=None, PRINT=False, DETACH=False):
+def call(cmd, ENV=None, INPUT=None, DIR=None, SHELL=False, PRINT=False, DETACH=False):
     if PRINT:
         cmdStr = cmdToStr(cmd)
         if cmdStr.startswith("cmd /c"):
@@ -110,7 +110,7 @@ def call(cmd, ENV=None, INPUT=None, DIR=None, PRINT=False, DETACH=False):
     try:
         # May fail to create the subprocess
         proc = subprocess.Popen(cmd, stdin=STDIN, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, env=_env, cwd=DIR)
+                                stderr=subprocess.PIPE, env=_env, cwd=DIR, shell=SHELL)
         if DETACH:
             return "Detached process", '', 0
         try:
@@ -129,7 +129,7 @@ def call(cmd, ENV=None, INPUT=None, DIR=None, PRINT=False, DETACH=False):
     return stdout, stderr, exitCode
 
 
-def calls(cmd, ENV=None, DIR=None, TIMEOUT=None, PRINT=False):
+def calls(cmd, ENV=None, DIR=None, TIMEOUT=None, PRINT=False, SHELL=False):
     cmdStr = cmdToStr(cmd)
     if PRINT:
         if cmdStr.startswith("cmd /c"):
@@ -150,7 +150,7 @@ def calls(cmd, ENV=None, DIR=None, TIMEOUT=None, PRINT=False):
         callTimes += 1
         try:
             # May fail to create the subprocess
-            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=_env, cwd=DIR)
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=_env, cwd=DIR, shell=SHELL)
             try:
                 stdout, stderr = proc.communicate(timeout=TIMEOUT)
                 stdout, stderr = stdout.decode("utf-8").rstrip(), stderr.decode("utf-8").rstrip()

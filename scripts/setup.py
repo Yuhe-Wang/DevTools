@@ -1,9 +1,11 @@
 import os
 import winreg
+import socket
 from pathlib import Path
 
 from scripts.share.util import gs
 from scripts.share.util import call
+from scripts.share.util import calls
 from scripts.share.util import printf
 from scripts.share.util import copyPath
 from scripts.share.util import removePath
@@ -410,6 +412,33 @@ def setupGit():
     call(cmd)
 
 
+def hasInternet():
+    try:
+        socket.create_connection(("1.1.1.1", 53))
+        return True
+    except OSError:
+        pass
+    return False
+
+
+def setupScoop():
+    if not hasInternet():
+        printf("Have no internet connection. Will skip scoop setup")
+        return
+    printf("Setup scoop...")
+    ps1 = "Set-ExecutionPolicy RemoteSigned -scope CurrentUser"
+    calls('powershell -Command "%s"' % ps1)
+    ps1 = "iwr -useb get.scoop.sh | iex"
+    calls('powershell -Command "%s"' % ps1)
+    scoopDir = Path(os.environ["USERPROFILE"])/"scoop/shims"
+    calls("scoop bucket add extras", SHELL=True, DIR=str(scoopDir))
+    call("scoop update", SHELL=True, DIR=str(scoopDir))
+    printf("Install vscode...")
+    calls("scoop install vscode", SHELL=True, DIR=str(scoopDir))
+    vscodeRegPath = Path(os.environ["USERPROFILE"])/"scoop/apps/vscode/current/vscode-install-context.reg"
+    calls("reg import %s" % str(vscodeRegPath))
+
+
 def main(argv):
     if not argv:
         printf("Please specifiy the setup target or use all instead")
@@ -419,7 +448,7 @@ def main(argv):
         return 0
 
     if argv[0] == "all":
-        argv[0] = "7z,python,notepad++,git,font,optimize,conemu,ahk,pdf,listary"
+        argv[0] = "7z,python,notepad++,git,font,optimize,conemu,ahk,pdf,listary,scoop"
     setupList = argv[0].split(',')
     printf("Running setup...")
 
@@ -443,5 +472,7 @@ def main(argv):
         setupSumatraPdf()
     if "listary" in setupList:
         setupListary()
+    if "scoop" in setupList:
+        setupScoop()
     printf("Setup done!")
     return 0
