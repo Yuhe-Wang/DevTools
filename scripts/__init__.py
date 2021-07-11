@@ -14,7 +14,9 @@ def main(argv):
 
 
 modules = {
+    "addpath": "Add given path to user env path list",
     "adminCmd": "Open a admin cmd window",
+    "delpath": "delete given path from user env path list",
     "lint": "Run linter of the scripts",
     "setup": "Setup the dev tools",
 }
