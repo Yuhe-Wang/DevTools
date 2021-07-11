@@ -19,33 +19,43 @@ from scripts.share.winutil import regDelete
 from scripts.share.winutil import installFont
 from scripts.share.winutil import addContextMenu
 from scripts.share.winutil import setOpenWith
+from scripts.share.winutil import notifyEnvChange
 
 
 def setupPython():
     folder = "python-3.8.5"
     printf("Setup %s..." % folder)
-    pathList = [str(gs.GitDir/"app"/folder)]
-    # Scan the userPath
-    for p in regQuery(r"HKCU\Environment", "Path")[0].split(';'):
-        pStrip = p.strip()
-        if pStrip:
-            pathList.append(pStrip)
-            testPath = Path(pStrip)/"python.exe"
-            if testPath.is_file():
-                ret = call([str(testPath), "--version"])
-                if ret[2] == 0 and ret[0].split()[1].startswith("3."):
-                    return
-    # Scan the local machine path
-    for p in regQuery(r"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment", "Path")[0].split(';'):
-        pStrip = p.strip()
-        if pStrip:
-            testPath = Path(pStrip)/"python.exe"
-            if testPath.is_file():
-                ret = call([str(testPath), "--version"])
-                if ret[2] == 0 and ret[0].split()[1].startswith("3."):
-                    return
-    # Cannot find python 3. Add python 3 in this repo to user path
-    regAdd(r"HKCU\Environment", "Path", ";".join(pathList))
+    newPathList = []
+    # Scan the user path
+    userPath = regQuery(r"HKCU\Environment", "Path")[0]
+    userPathList = [p.strip() for p in userPath.split(';')]
+    foundPython3 = False
+    for p in userPathList:
+        testPath = Path(p)/"python.exe"
+        if testPath.is_file():
+            ret = call([str(testPath), "--version"])
+            if ret[2] == 0 and ret[0].split()[1].startswith("3."):
+                foundPython3 = True
+                break
+    # Scan the sys path
+    sysPath = regQuery(r"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment", "Path")[0]
+    sysPathList = [p.strip() for p in sysPath.split(';')]
+    for p in sysPathList:
+        testPath = Path(p)/"python.exe"
+        if testPath.is_file():
+            ret = call([str(testPath), "--version"])
+            if ret[2] == 0 and ret[0].split()[1].startswith("3."):
+                foundPython3 = True
+                break
+    if not foundPython3:
+        newPathList.append(str(gs.GitDir/"app"/folder))
+    # Add the bin path too
+    binDir = str(gs.GitDir/"bin")
+    if binDir not in userPathList + sysPathList:
+        newPathList.append(binDir)
+    if newPathList:
+        regAdd(r"HKCU\Environment", "Path", ";".join(newPathList + userPathList))
+        notifyEnvChange()
 
 
 def setupFont():
@@ -117,6 +127,7 @@ def setupNpp():
     folder = "notepad++-7.8.9"
     printf("Setup %s" % folder)
     appDir = gs.GitDir/"app"/folder
+    nppPath = appDir/"notepad++.exe"
     clsid = "B298D29A-A6ED-11DE-BA8C-A68E55D89593"
     regAdd(r"HKCR\CLSID\{%s}" % clsid, '@', "ANotepad++64")
     regAddList(r"HKCR\CLSID\{%s}\InprocServer32" % clsid, [
@@ -124,12 +135,15 @@ def setupNpp():
                ("ThreadingModel", "Apartment")])
     regAddList(r"HKCR\CLSID\{%s}\Settings" % clsid, [
                ("Title", "Edit with &Notepad++"),
-               ("Path", str(appDir/"notepad++.exe")),
+               ("Path", str(nppPath)),
                ("Custom", ''),
                ("ShowIcon", 1),
                ("Dynamic",  1),
                ("Maxtext",  25)])
     regAdd(r"HKCR\*\shellex\ContextMenuHandlers\ANotepad++64", '@', "{%s}" % clsid)
+    # Setup txt, log
+    setOpenWith("txt", str(nppPath), icon=1, regKeyName="Notepad++_file")
+    setOpenWith("log", str(nppPath), icon=1, regKeyName="Notepad++_file")
     srcDir = gs.GitDir/"backup/Notepad++"
     dstDir = Path(os.environ["appdata"])/"Notepad++"
     if srcDir.is_dir():
@@ -388,7 +402,7 @@ def setupListary():
         call(startupCmd, DETACH=True)
     if call("sc query ListaryService")[2] != 0:
         cmd = ('sc create ListaryService binPath= "%s" start= auto group= "Extended Base" ' %
-            str(gs.GitDir/"app"/folder/"ListaryService.exe"))
+               str(gs.GitDir/"app"/folder/"ListaryService.exe"))
         call(cmd)
         cmd = "sc start ListaryService"
         call(cmd)

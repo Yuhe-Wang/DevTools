@@ -4,6 +4,7 @@ import ctypes
 from pathlib import Path
 
 import win32con
+import win32gui
 import win32event
 import win32process
 import win32net
@@ -213,3 +214,7 @@ def setOpenWith(ext, exe, icon=None, regKeyName=None):
     elif isinstance(icon, int):
         regAdd(r"HKCR\%s\DefaultIcon" % regKeyName, '@', "%s,%d" % (exe, icon))
     regAdd(r"HKCR\%s\shell\open\command" % regKeyName, '@', '"%s" "%%1"' % exe)
+
+
+def notifyEnvChange():
+    win32gui.SendMessage(win32con.HWND_BROADCAST, win32con.WM_SETTINGCHANGE, 0, "Environment")
