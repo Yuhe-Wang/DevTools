@@ -18,5 +18,6 @@ modules = {
     "adminCmd": "Open a admin cmd window",
     "delpath": "delete given path from user env path list",
     "lint": "Run linter of the scripts",
+    "sendfile": "Send file to local network",
     "setup": "Setup the dev tools",
 }

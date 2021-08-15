@@ -218,3 +218,15 @@ def setOpenWith(ext, exe, icon=None, regKeyName=None):
 
 def notifyEnvChange():
     win32gui.SendMessage(win32con.HWND_BROADCAST, win32con.WM_SETTINGCHANGE, 0, "Environment")
+
+
+def addOpenWithContextMenu(cmd, menuText, shell=False):
+    regAdd(r"HKCR\*\shell\%s" % menuText, '@', menuText)
+    if isinstance(cmd, str):
+        cmd = cmd.split()
+        assert isinstance(cmd, list)
+    cmd += ["%%1"]
+    if shell:
+        cmd = [r"C:\Windows\System32\cmd.exe", "/c", "call"] + cmd
+    cmdStr = ' '.join(['"%s"' % x for x in cmd])
+    regAdd(r"HKCR\*\shell\%s\command" % menuText, '@', cmdStr)
