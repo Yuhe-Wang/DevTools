@@ -21,9 +21,18 @@ from scripts.share.winutil import addContextMenu
 from scripts.share.winutil import setOpenWith
 from scripts.share.winutil import notifyEnvChange
 
+AppVersionDict = {
+    "python": "python-3.8.5",
+    "7z": "7z-19.00",
+    "notepad++": "notepad++-7.8.9",
+    "conemu": "conemu-20.7.13",
+    "ahk": "ahk-1.1.33",
+    "sumatra": "sumatra-3.0",
+    "listary": "listary-5.00.2843",
+}
 
 def setupPython():
-    folder = "python-3.8.5"
+    folder = AppVersionDict["python"]
     printf("Setup %s..." % folder)
     newPathList = []
     # Scan the user path
@@ -67,7 +76,7 @@ def setupFont():
 
 def setup7z():
     # Setup file extension with 7z
-    folder = "7z-19.00"
+    folder = AppVersionDict["7z"]
     printf("Setup %s..." % folder)
     clsid = "23170F69-40C1-278A-1000-000100020000"  # The clsid may be changed with the version
     iconDict = {
@@ -124,7 +133,7 @@ def setup7z():
 
 
 def setupNpp():
-    folder = "notepad++-7.8.9"
+    folder = AppVersionDict["notepad++"]
     printf("Setup %s" % folder)
     appDir = gs.GitDir/"app"/folder
     nppPath = appDir/"notepad++.exe"
@@ -159,14 +168,14 @@ def backup():
         removePath(gs.GitDir/"backup/Notepad++/session.xml")  # No need to back up session
 
     printf("Backup the ConEmu settings")
-    folder = "conemu-20.7.13"
+    folder = AppVersionDict["conemu"]
     srcPath = gs.GitDir/"app"/folder/"ConEmu.xml"
     dstDir = gs.GitDir/"backup/conemu"
     if srcPath.is_file():
         copyPath(srcPath, dstDir)
 
     printf("Backup the Sumatra PDF settings")
-    folder = "sumatra-3.2"
+    folder = AppVersionDict["sumatra"]
     srcPath = gs.GitDir/"app"/folder/"SumatraPDF-settings.txt"
     dstDir = gs.GitDir/"backup/sumatra"
     if srcPath.is_file():
@@ -326,47 +335,27 @@ def optimizeWin10():
     # Disable one drive
     regAdd(r"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\OneDrive", "DisableFileSyncNGSC", 1)
 
-    # Add cmd context menu
-    addContextMenu("cmdhere", "Open CMD here (&Q)", 'cmd.exe /s /k pushd "%V"', icon="cmd.exe")
-
     if restartExplorer:
         # Windows 10 will automatically start explorer after the process was killed
         killProcess("Explorer")
 
 
 def setupConEmu():
-    folder = "conemu-20.7.13"
+    folder = AppVersionDict["conemu"]
     printf("Setup %s..." % folder)
     # Copy the config
     srcDir = gs.GitDir/"backup/conemu"
     dstDir = gs.GitDir/"app"/folder
     if srcDir.is_dir():
         copyPath(srcDir, dstDir)
-    # Setup the reg
-    regAddList(r"HKCU\SOFTWARE\ConEmu", [
-               ("DefTerm-Enabled", 1),
-               ("DefTerm-NoInjects", 0),
-               ("DefTerm-NewWindow", 0),
-               ("DefTerm-DebugLog", 0),
-               ("DefTerm-Confirm", 2),
-               ("DefTerm-Flags", 34470),
-               ("DefTerm-ConEmuExe", str(dstDir/"ConEmu64.exe"),),
-               ("DefTerm-BaseDir", str(dstDir),),
-               ("DefTerm-CfgFile", ''),
-               ("DefTerm-Config", ''),
-               ("DefTerm-AppList", ["explorer.exe"])])
-
-    # Startup cmd
-    startupCmd = '"%s" -SetDefTerm -Detached -MinTSA' % str(dstDir/"ConEmu64.exe")
-    regAdd(r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
-           "ConEmuDefaultTerminal", startupCmd)
-    # Run setup once
-    if not getProcessCmd("ConEmu64"):
-        call(startupCmd, DETACH=True)
+    # Add cmd context menu
+    conEmuExe = str(dstDir/"ConEmu64.exe")
+    contextCmd = '"%s" -Single -run cmd.exe /s /k pushd "%%V"' % conEmuExe
+    addContextMenu("cmdhere", "Open CMD here (&Q)", contextCmd, icon="cmd.exe")
 
 
 def setupAutoHotKey():
-    folder = "ahk-1.1.33"
+    folder = AppVersionDict["ahk"]
     printf("Setup %s..." % folder)
     exePath = gs.GitDir/"app"/folder/"AutoHotkeyU64.exe"
     setOpenWith("ahk", str(exePath), icon=1, regKeyName="AutoHotkeyScript")
@@ -377,7 +366,7 @@ def setupAutoHotKey():
 
 
 def setupSumatraPdf():
-    folder = "sumatra-3.0"
+    folder = AppVersionDict["sumatra"]
     printf("Setup %s..." % folder)
     exePath = gs.GitDir/"app"/folder/"SumatraPDF.exe"
     # Setup open with. Need special handling for pdf
@@ -392,7 +381,7 @@ def setupSumatraPdf():
 
 
 def setupListary():
-    folder = "listary-5.00.2843"
+    folder = AppVersionDict["listary"]
     printf("Setup %s..." % folder)
     exePath = gs.GitDir/"app"/folder/"Listary.exe"
     startupCmd = '"%s" -startup' % str(exePath)
@@ -415,7 +404,7 @@ def setupListary():
 
 def setupGit():
     printf("Setup git... (involves persional info)")
-    nppFolder = "notepad++-7.8.9"
+    nppFolder = AppVersionDict["notepad++"]
     nppPath = gs.GitDir/"app"/nppFolder/"notepad++.exe"
     editorCmd = "'%s' -multiInst -notabbar -nosession -noPlugin" % str(nppPath)
     cmd = 'git config --global core.editor "%s"' % editorCmd
